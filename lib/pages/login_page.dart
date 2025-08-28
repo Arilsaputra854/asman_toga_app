@@ -37,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset("assets/logo.png", height: 100),
+                        Image.asset("assets/logo_title.png", height: 100),
                         SizedBox(width: 20.w),
 
                         // Divider vertikal
@@ -52,16 +52,6 @@ class _LoginPageState extends State<LoginPage> {
                       ],
                     ),
 
-                    const SizedBox(height: 16),
-                    const Text(
-                      "ASMAN TOGA",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                        letterSpacing: 1,
-                      ),
-                    ),
                   ],
                 ),
               ),

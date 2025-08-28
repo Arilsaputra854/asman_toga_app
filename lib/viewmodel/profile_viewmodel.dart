@@ -27,7 +27,30 @@ class ProfileViewModel extends ChangeNotifier {
   }
 
   Future<void> logout(BuildContext context) async {
-    await PrefsHelper.clearToken();
-    Navigator.pushReplacementNamed(context, '/login');
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final success = await ApiService.logout();
+
+      if (success) {
+        await PrefsHelper.clearToken();
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      } else {
+        debugPrint("Logout gagal dari server");
+        // opsional: bisa kasih snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Logout gagal, coba lagi")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error logout: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Terjadi kesalahan: $e")));
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
 }

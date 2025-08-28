@@ -1,12 +1,26 @@
 import 'dart:convert';
 import 'package:asman_toga/helper/prefs.dart';
 import 'package:asman_toga/models/user.dart';
-import 'package:flutter/foundation.dart'; // supaya bisa pakai debugPrint
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class ApiService {
   static const String baseUrl =
       "https://asman-toga-production.up.railway.app/api/v1";
+
+  // 🔹 Helper buat header
+  static Future<Map<String, String>> _headers({bool withAuth = false}) async {
+    final headers = {"Content-Type": "application/json"};
+    if (withAuth) {
+      final token = await PrefsHelper.getToken();
+      if (token != null) {
+        headers["Authorization"] = "Bearer $token";
+      }
+    }
+    return headers;
+  }
+
+  // ==================== AUTH ====================
 
   // REGISTER
   static Future<Map<String, dynamic>> register({
@@ -14,31 +28,22 @@ class ApiService {
     required String email,
     required String password,
     required String confirmPassword,
+    String role = "user",
   }) async {
     final url = Uri.parse("$baseUrl/register");
 
     try {
-      debugPrint("➡️ [REGISTER] POST $url");
-      debugPrint("📦 Body: ${{
-        "name": name,
-        "email": email,
-        "password": password,
-        "confirm_password": confirmPassword,
-      }}");
-
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: await _headers(),
         body: jsonEncode({
           "name": name,
           "email": email,
           "password": password,
           "confirm_password": confirmPassword,
+          "role": role,
         }),
       );
-
-      debugPrint("⬅️ [REGISTER] Status: ${response.statusCode}");
-      debugPrint("⬅️ [REGISTER] Response: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {"success": true, "data": jsonDecode(response.body)};
@@ -46,7 +51,6 @@ class ApiService {
         return {"success": false, "message": response.body};
       }
     } catch (e) {
-      debugPrint("❌ [REGISTER] Error: $e");
       return {"success": false, "message": e.toString()};
     }
   }
@@ -59,67 +63,269 @@ class ApiService {
     final url = Uri.parse("$baseUrl/login");
 
     try {
-      debugPrint("➡️ [LOGIN] POST $url");
-      debugPrint("📦 Body: ${{
-        "email": email,
-        "password": password,
-      }}");
-
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: await _headers(),
         body: jsonEncode({
           "email": email,
           "password": password,
         }),
       );
 
-      debugPrint("⬅️ [LOGIN] Status: ${response.statusCode}");
-      debugPrint("⬅️ [LOGIN] Response: ${response.body}");
-
       if (response.statusCode == 200) {
-        return {"success": true, "data": jsonDecode(response.body)};
+        final data = jsonDecode(response.body);
+        await PrefsHelper.saveToken(data['token']); // simpan token
+        return {"success": true, "data": data};
       } else {
         return {"success": false, "message": response.body};
       }
     } catch (e) {
-      debugPrint("❌ [LOGIN] Error: $e");
       return {"success": false, "message": e.toString()};
     }
   }
 
-   // PROFILE
-  static Future<User?> getProfile() async {
-    final url = Uri.parse("$baseUrl/profile");
-    final token = await PrefsHelper.getToken();
-
-    if (token == null) {
-      debugPrint("❌ [PROFILE] Token not found");
-      return null;
-    }
-
+  // FORGOT PASSWORD
+  static Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final url = Uri.parse("$baseUrl/forgot-password");
     try {
-      debugPrint("➡️ [PROFILE] GET $url");
-
-      final response = await http.get(
+      final response = await http.post(
         url,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
+        headers: await _headers(),
+        body: jsonEncode({"email": email}),
       );
 
-      debugPrint("⬅️ [PROFILE] ${response.statusCode} | ${response.body}");
+      return {
+        "success": response.statusCode == 200,
+        "message": response.body,
+      };
+    } catch (e) {
+      return {"success": false, "message": e.toString()};
+    }
+  }
+
+  // RESET PASSWORD
+  static Future<Map<String, dynamic>> resetPassword({
+    required String token,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final url = Uri.parse("$baseUrl/reset-password");
+    try {
+      final response = await http.post(
+        url,
+        headers: await _headers(),
+        body: jsonEncode({
+          "token": token,
+          "new_password": newPassword,
+          "confirm_password": confirmPassword,
+        }),
+      );
+
+      return {
+        "success": response.statusCode == 200,
+        "message": response.body,
+      };
+    } catch (e) {
+      return {"success": false, "message": e.toString()};
+    }
+  }
+
+  // PROFILE
+  static Future<User?> getProfile() async {
+    final url = Uri.parse("$baseUrl/profile");
+
+    try {
+      final response = await http.get(
+        url,
+        headers: await _headers(withAuth: true),
+      );
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-        return User.fromJson(json['user']);
+        return User.fromJson(json);
       } else {
         return null;
       }
     } catch (e) {
-      debugPrint("❌ [PROFILE] Error: $e");
       return null;
+    }
+  }
+
+  // LOGOUT
+  static Future<bool> logout() async {
+    final url = Uri.parse("$baseUrl/logout");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: await _headers(withAuth: true),
+      );
+
+      if (response.statusCode == 200) {
+        await PrefsHelper.clearToken();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ==================== PLANTS ====================
+
+  static Future<List<dynamic>> getPlants() async {
+    final url = Uri.parse("$baseUrl/plants");
+    try {
+      final response = await http.get(url, headers: await _headers());
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return json['plants'] ?? [];
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getPlantDetail(String slug) async {
+    final url = Uri.parse("$baseUrl/plants/$slug");
+    try {
+      final response = await http.get(url, headers: await _headers());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ==================== USER PLANTS ====================
+
+  static Future<List<dynamic>> getUserPlants() async {
+    final url = Uri.parse("$baseUrl/userplants");
+    try {
+      final response = await http.get(url, headers: await _headers());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>?> addUserPlant({
+    required int plantId,
+    required String address,
+    double? latitude,
+    double? longitude,
+    String? notes,
+  }) async {
+    final url = Uri.parse("$baseUrl/userplants");
+    try {
+      final response = await http.post(
+        url,
+        headers: await _headers(withAuth: true),
+        body: jsonEncode({
+          "plant_id": plantId,
+          "address": address,
+          "latitude": latitude,
+          "longitude": longitude,
+          "notes": notes,
+        }),
+      );
+      if (response.statusCode == 201) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getUserPlantById(String id) async {
+    final url = Uri.parse("$baseUrl/userplants/$id");
+    try {
+      final response = await http.get(url, headers: await _headers());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> updateUserPlant({
+    required String id,
+    String? address,
+    double? latitude,
+    double? longitude,
+    String? notes,
+  }) async {
+    final url = Uri.parse("$baseUrl/userplants/$id");
+    try {
+      final response = await http.put(
+        url,
+        headers: await _headers(withAuth: true),
+        body: jsonEncode({
+          "address": address,
+          "latitude": latitude,
+          "longitude": longitude,
+          "notes": notes,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> approveUserPlant(String id) async {
+    final url = Uri.parse("$baseUrl/$id/approve");
+    try {
+      final response =
+          await http.put(url, headers: await _headers(withAuth: true));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getUserPlantByPlantId(
+      int plantId) async {
+    final url = Uri.parse("$baseUrl/userplants/by-plant/$plantId");
+    try {
+      final response = await http.get(url, headers: await _headers());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ==================== BANJAR ====================
+
+  static Future<List<dynamic>> getAllBanjar() async {
+    final url = Uri.parse("$baseUrl/all-banjar");
+    try {
+      final response = await http.get(url, headers: await _headers());
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return json['banjars'] ?? [];
+      }
+      return [];
+    } catch (e) {
+      return [];
     }
   }
 }
