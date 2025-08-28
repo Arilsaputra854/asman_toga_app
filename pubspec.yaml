@@ -43,6 +43,7 @@ dependencies:
   flutter_map: 
   latlong2:
   turf: ^0.0.10
+  geolocator: 
   
 dev_dependencies:
   flutter_launcher_icons: 

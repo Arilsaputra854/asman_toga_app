@@ -1,7 +1,6 @@
 import 'package:asman_toga/helper/prefs.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart'; // tambahin ini
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -11,19 +10,33 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  double _opacity = 0.0;
+
   @override
   void initState() {
     super.initState();
-    _checkLoginStatus();
+    _startAnimation();
   }
 
-  Future<void> _checkLoginStatus() async {
-    await Future.delayed(const Duration(seconds: 2)); // Delay splash
+  Future<void> _startAnimation() async {
+    // Fade in
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() => _opacity = 1.0);
 
-    
+    // Tahan sebentar
+    await Future.delayed(const Duration(seconds: 4));
+
+    // Fade out
+    setState(() => _opacity = 0.0);
+
+    // Tunggu fade out selesai
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    // Cek login setelah animasi
     final token = await PrefsHelper.getToken();
     debugPrint("TOKEN: $token");
 
+    if (!mounted) return;
     if (token != null && token.isNotEmpty) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
@@ -32,22 +45,25 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.white,
-    body: SafeArea(
-      child: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center, // biar rata tengah
-          children: [
-            Image.asset("assets/logo_gunaksa.png", height: 120.h), 
-            SizedBox(width: 20.w), // jarak antar logo
-            Image.asset("assets/logo.png", height: 120.h),
-          ],
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: AnimatedOpacity(
+            opacity: _opacity,
+            duration: const Duration(seconds: 1),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset("assets/logo_gunaksa.png", height: 120.h),
+                SizedBox(width: 20.w),
+                Image.asset("assets/logo_title.png", height: 120.h),
+              ],
+            ),
+          ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 }

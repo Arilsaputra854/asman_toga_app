@@ -41,17 +41,12 @@ class _LoginPageState extends State<LoginPage> {
                         SizedBox(width: 20.w),
 
                         // Divider vertikal
-                        Container(
-                          width: 2.w,
-                          height: 90.h,
-                          color: Colors.grey,
-                        ),
+                        Container(width: 2.w, height: 90.h, color: Colors.grey),
 
                         SizedBox(width: 20.w),
                         Image.asset("assets/logo_gunaksa.png", height: 100),
                       ],
                     ),
-
                   ],
                 ),
               ),
@@ -95,6 +90,18 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/forgot-password');
+                  },
+                  child: const Text(
+                    "Lupa Password?",
+                    style: TextStyle(color: Colors.green),
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 32),
 
@@ -125,18 +132,17 @@ class _LoginPageState extends State<LoginPage> {
                       );
                     }
                   },
-                  child: vm.isLoading
-                      ? const CircularProgressIndicator(
-                          color: Colors.white,
-                        )
-                      : Text(
-                          "Masuk",
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                  child:
+                      vm.isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                            "Masuk",
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
                 ),
               ),
 

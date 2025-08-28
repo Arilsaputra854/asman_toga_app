@@ -1,5 +1,6 @@
 import 'package:asman_toga/pages/about_page.dart';
 import 'package:asman_toga/pages/plants_page.dart';
+import 'package:asman_toga/service/api_service.dart';
 import 'package:asman_toga/viewmodel/home_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -16,16 +17,38 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool isLoadingUserPlants = false; 
+  List<Map<String, dynamic>> userPlants = []; 
   int _currentIndex = 0;
   final HomeViewModel _viewModel = HomeViewModel();
 
   @override
   void initState() {
     _viewModel.fetchProfile().then((_) {
-      setState(() {}); // update UI setelah fetch selesai
+      setState(() {});
     });
+    _viewModel.fetchPlants().then((_){
+      setState(() {
+        
+      });
+    });
+    fetchUserPlants(); 
     super.initState();
   }
+
+  Future<void> fetchUserPlants() async {
+  setState(() {
+    isLoadingUserPlants = true;
+  });
+
+  final result = await ApiService.getUserPlants();
+
+  setState(() {
+    userPlants = List<Map<String, dynamic>>.from(result);
+    isLoadingUserPlants = false;
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -155,92 +178,88 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 20),
 
           // List tanaman pakai Wrap (Chip style)
-          Wrap(
+          // List tanaman pakai Wrap (Chip style)
+_viewModel.isLoadingPlants
+    ? const Center(child: CircularProgressIndicator())
+    : _viewModel.plants.isEmpty
+        ? const Text("Tidak ada tanaman")
+        : Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: const [
-              Chip(
-                label: Text("Jahe Merah"),
-                backgroundColor: Colors.green, // ✅ hijau
-                labelStyle: TextStyle(color: Colors.white), // ✅ teks putih
-              ),
-              Chip(
-                label: Text("Sereh"),
+            children: _viewModel.plants.map((plant) {
+              return Chip(
+                label: Text(plant.name),
                 backgroundColor: Colors.green,
-                labelStyle: TextStyle(color: Colors.white),
-              ),
-              Chip(
-                label: Text("Kunyit"),
-                backgroundColor: Colors.green,
-                labelStyle: TextStyle(color: Colors.white),
-              ),
-              Chip(
-                label: Text("Kelor"),
-                backgroundColor: Colors.green,
-                labelStyle: TextStyle(color: Colors.white),
-              ),
-              Chip(
-                label: Text("Sirih"),
-                backgroundColor: Colors.green,
-                labelStyle: TextStyle(color: Colors.white),
-              ),
-              Chip(
-                label: Text("Kumis Kucing"),
-                backgroundColor: Colors.green,
-                labelStyle: TextStyle(color: Colors.white),
-              ),
-              Chip(
-                label: Text("Daun Telang"),
-                backgroundColor: Colors.green,
-                labelStyle: TextStyle(color: Colors.white),
-              ),
-            ],
+                labelStyle: const TextStyle(color: Colors.white),
+              );
+            }).toList(),
           ),
+
           const SizedBox(height: 20),
 
           // Map Preview (non-interaktif)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              height: 200,
-              child: FlutterMap(
-                options: MapOptions(
-                  center: LatLng(
-                    -8.544444,
-                    115.423333,
-                  ), // titik tengah Desa Gunaksa
-                  zoom: 15,
-                  interactiveFlags:
-                      InteractiveFlag.none, // kalau mau non-aktif geser/zoom
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-                    subdomains: const ['a', 'b', 'c'],
-                    userAgentPackageName: 'com.example.app',
-                  ),
+ClipRRect(
+  borderRadius: BorderRadius.circular(12),
+  child: SizedBox(
+    height: 200,
+    child: FlutterMap(
+      options: MapOptions(
+        center: LatLng(-8.544444, 115.423333),
+        zoom: 15,
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          subdomains: const ['a', 'b', 'c'],
+          userAgentPackageName: 'com.example.app',
+        ),
 
-                  // Tambahkan PolygonLayer
-                  PolygonLayer(
-                    polygons: [
-                      Polygon(
-                        points: [
-                          LatLng(-8.5450, 115.4210),
-                          LatLng(-8.5460, 115.4260),
-                          LatLng(-8.5430, 115.4285),
-                          LatLng(-8.5415, 115.4235),
-                        ],
-                        color: Colors.grey.withValues(alpha: 0), // warna isi
-                        borderStrokeWidth: 2,
-                        borderColor: Colors.green, // warna garis
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+        // PolygonLayer yang sudah ada
+        PolygonLayer(
+          polygons: [
+            Polygon(
+              points: desaGunaksaPolygon,
+              color: Colors.green.withOpacity(0.1),
+              borderStrokeWidth: 2,
+              borderColor: Colors.green,
             ),
+          ],
+        ),
+
+        // ⬅️ Tambahkan MarkerLayer untuk userPlants
+        if (!isLoadingUserPlants)
+          MarkerLayer(
+            markers: userPlants.map((plant) {
+              final lat = plant['latitude'];
+              final lng = plant['longitude'];
+              if (lat != null && lng != null) {
+                return Marker(
+                  point: LatLng(lat, lng),
+                  width: 35,
+                  height: 35,
+                  builder: (_) => Tooltip(
+                    message:
+                        "${plant['plant']['plant_name']}\n${plant['address']}\nStatus: ${plant['status']}",
+                    child: const Icon(
+                      Icons.local_florist,
+                      color: Colors.green,
+                      size: 35,
+                    ),
+                  ),
+                );
+              }
+              return Marker(
+                point: LatLng(0, 0),
+                width: 0,
+                height: 0,
+                builder: (_) => const SizedBox(),
+              );
+            }).toList(),
           ),
+      ],
+    ),
+  ),
+),
         ],
       ),
     );

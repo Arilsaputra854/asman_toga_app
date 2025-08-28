@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:asman_toga/helper/prefs.dart';
+import 'package:asman_toga/models/plant_details.dart';
+import 'package:asman_toga/models/plants.dart';
 import 'package:asman_toga/models/user.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -132,24 +134,25 @@ class ApiService {
 
   // PROFILE
   static Future<User?> getProfile() async {
-    final url = Uri.parse("$baseUrl/profile");
+  final url = Uri.parse("$baseUrl/profile");
 
-    try {
-      final response = await http.get(
-        url,
-        headers: await _headers(withAuth: true),
-      );
+  try {
+    final response = await http.get(
+      url,
+      headers: await _headers(withAuth: true),
+    );
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        return User.fromJson(json);
-      } else {
-        return null;
-      }
-    } catch (e) {
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      return User.fromJson(json['user']); // ✅ ambil dari key "user"
+    } else {
       return null;
     }
+  } catch (e) {
+    return null;
   }
+}
+
 
   // LOGOUT
   static Future<bool> logout() async {
@@ -173,32 +176,52 @@ class ApiService {
 
   // ==================== PLANTS ====================
 
-  static Future<List<dynamic>> getPlants() async {
-    final url = Uri.parse("$baseUrl/plants");
-    try {
-      final response = await http.get(url, headers: await _headers());
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        return json['plants'] ?? [];
-      }
-      return [];
-    } catch (e) {
-      return [];
-    }
-  }
+  static Future<List<Plant>> getPlants() async {
+  final url = Uri.parse("$baseUrl/plants");
+  try {
+    debugPrint("🔍 [getPlants] Request ke: $url");
+    final headers = await _headers();
+    debugPrint("📩 [getPlants] Headers: $headers");
 
-  static Future<Map<String, dynamic>?> getPlantDetail(String slug) async {
-    final url = Uri.parse("$baseUrl/plants/$slug");
-    try {
-      final response = await http.get(url, headers: await _headers());
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
-      return null;
-    } catch (e) {
-      return null;
+    final response = await http.get(url, headers: headers);
+    debugPrint("📡 [getPlants] Status Code: ${response.statusCode}");
+    debugPrint("📦 [getPlants] Body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      debugPrint("✅ [getPlants] JSON Decode: $json");
+
+      final List<dynamic> plantList = json['plants'] ?? [];
+      debugPrint("🌱 [getPlants] Jumlah tanaman: ${plantList.length}");
+
+      return plantList.map((e) => Plant.fromJson(e)).toList();
     }
+
+    debugPrint("⚠️ [getPlants] Gagal ambil data, status: ${response.statusCode}");
+    return [];
+  } catch (e, stack) {
+    debugPrint("❌ [getPlants] Error: $e");
+    debugPrint("📝 Stacktrace: $stack");
+    return [];
   }
+}
+
+
+
+  static Future<PlantDetails?> getPlantDetail(String slug) async {
+  final url = Uri.parse("$baseUrl/plants/$slug");
+  try {
+    final response = await http.get(url, headers: await _headers());
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      return PlantDetails.fromJson(json['plant']); // ✅ parsing langsung
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 
   // ==================== USER PLANTS ====================
 
@@ -206,6 +229,7 @@ class ApiService {
     final url = Uri.parse("$baseUrl/userplants");
     try {
       final response = await http.get(url, headers: await _headers());
+      debugPrint("RESPONSE USER PLANTS :${response.body}");
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
