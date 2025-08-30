@@ -52,14 +52,24 @@ class AboutPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
-                "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
-                "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi "
-                "ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit "
-                "in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-                style: TextStyle(fontSize: 16, height: 1.5),
-                textAlign: TextAlign.justify,
+
+              // Paragraf dengan background gelap
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+                  "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
+                  "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi "
+                  "ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit "
+                  "in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+                  style: TextStyle(fontSize: 16, height: 1.5),
+                  textAlign: TextAlign.justify,
+                ),
               ),
 
               const SizedBox(height: 28),
@@ -77,13 +87,23 @@ class AboutPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
-                "Praesent commodo cursus magna, vel scelerisque nisl consectetur et. "
-                "Donec sed odio dui. Nulla vitae elit libero, a pharetra augue. "
-                "Maecenas faucibus mollis interdum.",
-                style: TextStyle(fontSize: 16, height: 1.5),
-                textAlign: TextAlign.justify,
+
+              // Paragraf Tim Production dengan background gelap
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+                  "Praesent commodo cursus magna, vel scelerisque nisl consectetur et. "
+                  "Donec sed odio dui. Nulla vitae elit libero, a pharetra augue. "
+                  "Maecenas faucibus mollis interdum.",
+                  style: TextStyle(fontSize: 16, height: 1.5),
+                  textAlign: TextAlign.justify,
+                ),
               ),
             ],
           ),

@@ -24,7 +24,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.read<RegisterViewModel>();
+    final vm = context.watch<RegisterViewModel>();
 
     return Scaffold(
       body: SafeArea(
@@ -37,17 +37,23 @@ class _RegisterPageState extends State<RegisterPage> {
               children: [
                 const SizedBox(height: 40),
 
-                // Logo
+                // Logo + Judul
                 Center(
                   child: Column(
                     children: [
-                      Image.asset(
-                        "assets/logo.png",
-                        height: 100,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset("assets/logo_title.png", height: 100),
+                          SizedBox(width: 20.w),
+                          Container(width: 2.w, height: 90.h, color: Colors.grey),
+                          SizedBox(width: 20.w),
+                          Image.asset("assets/logo_gunaksa.png", height: 100),
+                        ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       const Text(
-                        "ASMAN TOGA",
+                        "BUAT AKUN",
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -59,7 +65,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
                 // Nama Lengkap
                 TextFormField(
@@ -94,8 +100,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     if (value == null || value.isEmpty) {
                       return "Email tidak boleh kosong";
                     }
-                    if (!value.contains("@")) {
-                      return "Email tidak valid";
+                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+                    if (!emailRegex.hasMatch(value)) {
+                      return "Format email tidak valid";
                     }
                     return null;
                   },
@@ -183,40 +190,46 @@ class _RegisterPageState extends State<RegisterPage> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    onPressed: () async {
-                      if (_formKey.currentState!.validate()) {
-                        final success = await vm.register(
-                          name: nameController.text.trim(),
-                          email: emailController.text.trim(),
-                          password: passwordController.text.trim(),
-                          confirmPassword:
-                              confirmPasswordController.text.trim(),
-                        );
+                    onPressed: vm.isLoading
+                        ? null
+                        : () async {
+                            if (_formKey.currentState!.validate()) {
+                              final success = await vm.register(
+                                name: nameController.text.trim(),
+                                email: emailController.text.trim(),
+                                password: passwordController.text.trim(),
+                                confirmPassword:
+                                    confirmPasswordController.text.trim(),
+                              );
 
-                        if (success) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text("Registrasi berhasil")),
-                          );
-                          Navigator.pushReplacementNamed(context, '/login');
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content:
-                                  Text(vm.errorMessage ?? "Gagal daftar"),
+                              if (success) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text("Registrasi berhasil")),
+                                );
+                                Navigator.pushReplacementNamed(context, '/login');
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        vm.errorMessage ?? "Gagal daftar"),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                    child: vm.isLoading
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                          )
+                        : Text(
+                            "Daftar",
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
-                          );
-                        }
-                      }
-                    },
-                    child: Text(
-                      "Daftar",
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                          ),
                   ),
                 ),
 
