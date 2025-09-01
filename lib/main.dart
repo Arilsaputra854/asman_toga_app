@@ -11,6 +11,7 @@ import 'package:asman_toga/viewmodel/home_viewmodel.dart';
 import 'package:asman_toga/viewmodel/login_viewmodel.dart';
 import 'package:asman_toga/viewmodel/profile_viewmodel.dart';
 import 'package:asman_toga/viewmodel/register_viewmodel.dart';
+import 'package:asman_toga/viewmodel/tambah_lokasi_tanaman_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -39,6 +40,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
+        ChangeNotifierProvider(create: (_) =>  TambahLokasiTanamanViewModel()),
       ],
       child: MaterialApp(
         title: 'Asman Toga',

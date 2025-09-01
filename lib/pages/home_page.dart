@@ -193,7 +193,7 @@ class HomeContent extends StatelessWidget {
               child: FlutterMap(
                 options: MapOptions(
                   center: LatLng(-8.544444, 115.423333),
-                  zoom: 15,
+                  zoom: 12.5,
                 ),
                 children: [
                   TileLayer(

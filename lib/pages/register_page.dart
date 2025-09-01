@@ -1,7 +1,11 @@
+import 'package:asman_toga/models/banjar.dart';
+import 'package:asman_toga/service/api_service.dart';
 import 'package:asman_toga/viewmodel/register_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+
+
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -21,6 +25,22 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  List<Banjar> _banjars = [];
+  Banjar? _selectedBanjar;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBanjars();
+  }
+
+  Future<void> _loadBanjars() async {
+    final list = await ApiService.getAllBanjarModel();
+    setState(() {
+      _banjars = List<Banjar>.from(list);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,6 +197,36 @@ class _RegisterPageState extends State<RegisterPage> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 16),
+
+                // Dropdown Banjar
+                DropdownButtonFormField<Banjar>(
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.location_city_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  hint: const Text("Pilih Banjar"),
+                  value: _selectedBanjar,
+                  items: _banjars.map((banjar) {
+                    return DropdownMenuItem(
+                      value: banjar,
+                      child: Text(banjar.name),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedBanjar = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return "Banjar harus dipilih";
+                    }
+                    return null;
+                  },
+                ),
                 const SizedBox(height: 32),
 
                 // Tombol Daftar
@@ -200,6 +250,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 password: passwordController.text.trim(),
                                 confirmPassword:
                                     confirmPasswordController.text.trim(),
+                                banjarId: _selectedBanjar!.id,
                               );
 
                               if (success) {
@@ -207,7 +258,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                   const SnackBar(
                                       content: Text("Registrasi berhasil")),
                                 );
-                                Navigator.pushReplacementNamed(context, '/login');
+                                Navigator.pushReplacementNamed(
+                                    context, '/login');
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(

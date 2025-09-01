@@ -9,9 +9,14 @@ class RegisterViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-
   // Register function
-  Future<bool> register({name, email, password, confirmPassword}) async {
+  Future<bool> register({
+    required String name,
+    required String email,
+    required String password,
+    required String confirmPassword,
+    required int banjarId,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -21,6 +26,7 @@ class RegisterViewModel extends ChangeNotifier {
       email: email,
       password: password,
       confirmPassword: confirmPassword,
+      banjarId: banjarId,
     );
 
     _isLoading = false;
@@ -34,5 +40,4 @@ class RegisterViewModel extends ChangeNotifier {
       return false;
     }
   }
-
 }

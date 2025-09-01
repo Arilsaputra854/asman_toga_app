@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:asman_toga/helper/prefs.dart';
+import 'package:asman_toga/models/banjar.dart';
 import 'package:asman_toga/models/plant_details.dart';
 import 'package:asman_toga/models/plants.dart';
 import 'package:asman_toga/models/user.dart';
@@ -24,38 +25,56 @@ class ApiService {
 
   // ==================== AUTH ====================
 
-  // REGISTER
-  static Future<Map<String, dynamic>> register({
-    required String name,
-    required String email,
-    required String password,
-    required String confirmPassword,
-    String role = "user",
-  }) async {
-    final url = Uri.parse("$baseUrl/register");
-
-    try {
-      final response = await http.post(
-        url,
-        headers: await _headers(),
-        body: jsonEncode({
-          "name": name,
-          "email": email,
-          "password": password,
-          "confirm_password": confirmPassword,
-          "role": role,
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return {"success": true, "data": jsonDecode(response.body)};
-      } else {
-        return {"success": false, "message": response.body};
-      }
-    } catch (e) {
-      return {"success": false, "message": e.toString()};
+  // GET ALL BANJAR (dengan model)
+static Future<List<Banjar>> getAllBanjarModel() async {
+  final url = Uri.parse("$baseUrl/all-banjar");
+  try {
+    final response = await http.get(url, headers: await _headers());
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      final List<dynamic> list = json['banjars'] ?? [];
+      return list.map((e) => Banjar.fromJson(e)).toList();
     }
+    return [];
+  } catch (e) {
+    return [];
   }
+}
+
+// REGISTER dengan banjar_id
+static Future<Map<String, dynamic>> register({
+  required String name,
+  required String email,
+  required String password,
+  required String confirmPassword,
+  required int banjarId,
+  String role = "user",
+}) async {
+  final url = Uri.parse("$baseUrl/register");
+
+  try {
+    final response = await http.post(
+      url,
+      headers: await _headers(),
+      body: jsonEncode({
+        "name": name,
+        "email": email,
+        "password": password,
+        "confirm_password": confirmPassword,
+        "banjar_id": banjarId,
+        "role": role,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {"success": true, "data": jsonDecode(response.body)};
+    } else {
+      return {"success": false, "message": response.body};
+    }
+  } catch (e) {
+    return {"success": false, "message": e.toString()};
+  }
+}
 
   // LOGIN
   static Future<Map<String, dynamic>> login({
