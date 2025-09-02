@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrefsHelper {
@@ -5,6 +6,7 @@ class PrefsHelper {
 
   /// Simpan token ke SharedPreferences
   static Future<void> saveToken(String token) async {
+    debugPrint("TOKEN: ${token}");
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
   }

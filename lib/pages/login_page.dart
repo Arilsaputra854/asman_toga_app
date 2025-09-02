@@ -25,7 +25,8 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Form( // 🔑 bungkus dengan Form
+          child: Form(
+            // 🔑 bungkus dengan Form
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -42,7 +43,11 @@ class _LoginPageState extends State<LoginPage> {
                           Image.asset("assets/logo_title.png", height: 100),
                           SizedBox(width: 20.w),
 
-                          Container(width: 2.w, height: 90.h, color: Colors.grey),
+                          Container(
+                            width: 2.w,
+                            height: 90.h,
+                            color: Colors.grey,
+                          ),
 
                           SizedBox(width: 20.w),
                           Image.asset("assets/logo_gunaksa.png", height: 100),
@@ -148,14 +153,25 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     onPressed: () async {
-                      if (_formKey.currentState!.validate()) { // ✅ validasi dulu
+                      if (_formKey.currentState!.validate()) {
+                        // ✅ validasi dulu
                         final success = await vm.login(
                           emailController.text.trim(),
                           passwordController.text.trim(),
                         );
 
                         if (success) {
-                          Navigator.pushReplacementNamed(context, '/home');
+                          final role =
+                              vm.userData?["user"]?["role"]; // ambil role dari response login
+
+                          if (role == "admin") {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              '/admin-dashboard',
+                            );
+                          } else {
+                            Navigator.pushReplacementNamed(context, '/home');
+                          }
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -165,16 +181,19 @@ class _LoginPageState extends State<LoginPage> {
                         }
                       }
                     },
-                    child: vm.isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                            "Masuk",
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
+                    child:
+                        vm.isLoading
+                            ? const CircularProgressIndicator(
                               color: Colors.white,
+                            )
+                            : Text(
+                              "Masuk",
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
                   ),
                 ),
 

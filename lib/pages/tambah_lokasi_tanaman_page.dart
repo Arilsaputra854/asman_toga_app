@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:asman_toga/viewmodel/tambah_lokasi_tanaman_viewmodel.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
@@ -9,10 +10,16 @@ import 'package:geolocator/geolocator.dart';
 import 'package:multi_select_flutter/dialog/multi_select_dialog_field.dart';
 import 'package:multi_select_flutter/util/multi_select_item.dart';
 import 'package:multi_select_flutter/util/multi_select_list_type.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:path/path.dart' as p;
 
 class TambahLokasiTanamanPage extends StatefulWidget {
-  const TambahLokasiTanamanPage({super.key});
+  final Map<String, dynamic>? existingPlant; 
+  const TambahLokasiTanamanPage({
+    super.key,
+    this.existingPlant, // opsional
+  });
 
   @override
   State<TambahLokasiTanamanPage> createState() =>
@@ -79,6 +86,7 @@ bool isPointInPolygon(LatLng point, List<LatLng> polygon) {
 }
 
 class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
+  
   List<XFile> selectedImages = [];
   List<int> selectedPlantIds = [];
   final TextEditingController namaController = TextEditingController();
@@ -92,13 +100,31 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
   final mapController = MapController();
 
   @override
-  void initState() {
-    super.initState();
+  @override
+void initState() {
+  super.initState();
+
+  if (widget.existingPlant != null) {
+    final plant = widget.existingPlant!;
+    namaController.text = plant["location"]["user"]["name"] ?? "";
+    alamatController.text = plant["location"]["address"] ?? "";
+    latController.text = plant["location"]["latitude"].toString();
+    lngController.text = plant["location"]["longitude"].toString();
+    catatanController.text = plant["notes"] ?? "";
+
+    selectedLocation = LatLng(
+      plant["location"]["latitude"],
+      plant["location"]["longitude"],
+    );
+  } else {
+    // default value (tambah baru)
     latController.text = selectedLocation.latitude.toStringAsFixed(6);
     lngController.text = selectedLocation.longitude.toStringAsFixed(6);
-
-    context.read<TambahLokasiTanamanViewModel>().getAllPlants();
   }
+
+  context.read<TambahLokasiTanamanViewModel>().getAllPlants();
+}
+
 
   Future<void> pickImages() async {
     final ImagePicker picker = ImagePicker();
@@ -107,17 +133,17 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
     if (images != null) {
       List<XFile> validImages = [];
       for (var img in images) {
-        final bytes = await img.length();
-        if (bytes <= 500 * 1024) {
-          validImages.add(img);
+        final compressed = await compressImageUnder500KB(img);
+        if (compressed != null) {
+          validImages.add(compressed);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("${img.name} lebih dari 500KB, dilewati")),
+            SnackBar(content: Text("${img.name} tidak bisa dikompres < 500KB")),
           );
         }
       }
       setState(() {
-        selectedImages = validImages;
+        selectedImages.addAll(validImages);
       });
     }
   }
@@ -181,77 +207,79 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
           title: const Text("Tambahkan Lokasi Tanaman"),
           centerTitle: true,
         ),
-body: SingleChildScrollView(
-  padding: const EdgeInsets.all(16),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
+        body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                controller: namaController,
-                decoration: InputDecoration(
-                  labelText: "Nama Lengkap",
-                  prefixIcon: const Icon(Icons.person),
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: namaController,
+                        decoration: InputDecoration(
+                          labelText: "Nama Lengkap",
+                          prefixIcon: const Icon(Icons.person),
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: alamatController,
+                        decoration: InputDecoration(
+                          labelText: "Alamat",
+                          prefixIcon: const Icon(Icons.home),
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: latController,
+                              decoration: InputDecoration(
+                                labelText: "Latitude",
+                                filled: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: lngController,
+                              decoration: InputDecoration(
+                                labelText: "Longitude",
+                                filled: true,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: alamatController,
-                decoration: InputDecoration(
-                  labelText: "Alamat",
-                  prefixIcon: const Icon(Icons.home),
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: latController,
-                      decoration: InputDecoration(
-                        labelText: "Latitude",
-                        filled: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: lngController,
-                      decoration: InputDecoration(
-                        labelText: "Longitude",
-                        filled: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
 
-      const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               SizedBox(
                 height: 300,
@@ -332,150 +360,231 @@ body: SingleChildScrollView(
                 ),
               ),
               const SizedBox(height: 16),
-      Center(
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          ),
-          onPressed: goToCurrentLocation,
-          icon: const Icon(Icons.my_location),
-          label: const Text("Gunakan Lokasi Saya"),
-        ),
-      ),
-
-      const SizedBox(height: 20),
-
-      // Catatan
-      TextFormField(
-        controller: catatanController,
-        maxLines: 3,
-        decoration: InputDecoration(
-          labelText: "Catatan Tambahan (opsional)",
-          filled: true,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-
-      const SizedBox(height: 20),
-
-      // Multi select tanaman
-      MultiSelectDialogField(
-        items: vm.plants
-            .map((plant) => MultiSelectItem<int>(plant.id, plant.name))
-            .toList(),
-        title: const Text("Pilih Tanaman"),
-        buttonText: const Text("Tambahkan Tanaman"),
-        listType: MultiSelectListType.CHIP,
-        searchable: true,
-        decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green),
-        ),
-        onConfirm: (values) {
-          setState(() => selectedPlantIds = values.cast<int>());
-        },
-      ),
-
-      const SizedBox(height: 20),
-
-      // Foto
-      ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.teal,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        ),
-        onPressed: pickImages,
-        icon: const Icon(Icons.add_a_photo,color: Colors.white,),
-        label: const Text("Tambah Foto", style: TextStyle(color: Colors.white),),
-      ),
-      const SizedBox(height: 12),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: selectedImages
-            .map((img) => ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    File(img.path),
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
+              Center(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
                   ),
-                ))
-            .toList(),
-      ),
-
-      const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed:
-                      vm.isLoading
-                          ? null
-                          : () async {
-                            bool allSuccess = true;
-
-                            for (var plantId in selectedPlantIds) {
-                              final success = await vm.submitPlant(
-                                plantId: plantId,
-                                address: alamatController.text,
-                                latitude: double.tryParse(latController.text),
-                                longitude: double.tryParse(lngController.text),
-                                notes:
-                                    catatanController.text.isNotEmpty
-                                        ? catatanController.text
-                                        : null,
-                                images: selectedImages,
-                              );
-
-                              if (!success) allSuccess = false;
-                            }
-
-                            if (allSuccess) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Berhasil menambahkan tanaman"),
-                                ),
-                              );
-                              Navigator.pop(context);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Beberapa tanaman gagal ditambahkan",
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-
-                  child:
-                      vm.isLoading
-                          ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                          : const Text("Simpan"),
+                  onPressed: goToCurrentLocation,
+                  icon: const Icon(Icons.my_location),
+                  label: const Text("Gunakan Lokasi Saya"),
                 ),
               ),
+
+              const SizedBox(height: 20),
+
+              // Catatan
+              TextFormField(
+                controller: catatanController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: "Catatan Tambahan (opsional)",
+                  filled: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Multi select tanaman
+              MultiSelectDialogField(
+                items:
+                    vm.plants
+                        .map(
+                          (plant) => MultiSelectItem<int>(plant.id, plant.name),
+                        )
+                        .toList(),
+                title: const Text("Pilih Tanaman"),
+                buttonText: const Text("Tambahkan Tanaman"),
+                listType: MultiSelectListType.CHIP,
+                searchable: true,
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green),
+                ),
+                onConfirm: (values) {
+                  setState(() => selectedPlantIds = values.cast<int>());
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              // Foto
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                ),
+                onPressed: pickImages,
+                icon: const Icon(Icons.add_a_photo, color: Colors.white),
+                label: const Text(
+                  "Tambah Foto",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children:
+                    selectedImages.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      XFile img = entry.value;
+
+                      return Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(
+                              File(img.path),
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedImages.removeAt(index);
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+              ),
+
+              const SizedBox(height: 30),
+              SizedBox(
+  width: double.infinity,
+  height: 50,
+  child: ElevatedButton(
+    onPressed: vm.isLoading
+        ? null
+        : () async {
+            if (widget.existingPlant == null) {
+              // ➕ Tambah baru
+              bool allSuccess = true;
+              for (var plantId in selectedPlantIds) {
+                final success = await vm.submitPlant(
+                  plantId: plantId,
+                  address: alamatController.text,
+                  latitude: double.tryParse(latController.text),
+                  longitude: double.tryParse(lngController.text),
+                  notes: catatanController.text.isNotEmpty
+                      ? catatanController.text
+                      : null,
+                  images: selectedImages,
+                );
+                if (!success) allSuccess = false;
+              }
+              if (allSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Berhasil menambahkan tanaman")),
+                );
+                Navigator.pop(context);
+              }
+            } else {
+              // ✏️ Update existing
+              final success = await vm.updatePlant(
+                id: widget.existingPlant!["id"],
+                address: alamatController.text,
+                latitude: double.tryParse(latController.text),
+                longitude: double.tryParse(lngController.text),
+                notes: catatanController.text.isNotEmpty
+                    ? catatanController.text
+                    : null,
+                images: selectedImages,
+              );
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Tanaman berhasil diupdate")),
+                );
+                Navigator.pop(context);
+              }
+            }
+          },
+    child: vm.isLoading
+        ? const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          )
+        : Text(widget.existingPlant == null ? "Simpan" : "Update"),
+  ),
+)
+
             ],
           ),
         ),
       ),
     );
   }
+}
+
+Future<XFile?> compressImageUnder500KB(XFile file) async {
+  final dir = await getTemporaryDirectory();
+
+  int quality = 90;
+  XFile? result;
+
+  while (quality > 10) {
+    // 🔹 generate nama file unik tiap iterasi
+    final targetPath = p.join(
+      dir.path,
+      "${DateTime.now().millisecondsSinceEpoch}_${quality}.jpg",
+    );
+
+    final compressed = await FlutterImageCompress.compressAndGetFile(
+      file.path,
+      targetPath,
+      quality: quality,
+    );
+
+    if (compressed != null) {
+      final bytes = await compressed.length();
+      if (bytes <= 500 * 1024) {
+        result = XFile(compressed.path);
+        break;
+      }
+    }
+
+    quality -= 10;
+  }
+
+  return result;
 }

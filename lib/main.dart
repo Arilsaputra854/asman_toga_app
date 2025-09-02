@@ -1,3 +1,4 @@
+import 'package:asman_toga/pages/admin_dashboard.dart';
 import 'package:asman_toga/pages/forgot_password_page.dart';
 import 'package:asman_toga/pages/home_page.dart';
 import 'package:asman_toga/pages/login_page.dart';
@@ -57,6 +58,7 @@ class MyApp extends StatelessWidget {
           '/forgot-password': (context) => const ForgotPasswordPage(),
           '/otp': (context) => const OtpPage(),
           '/reset-password': (context) => const ResetPasswordPage(),
+          '/admin-dashboard': (context) => const AdminDashboardPage(),
         },
       ),
     );

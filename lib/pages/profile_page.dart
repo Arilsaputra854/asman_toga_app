@@ -13,8 +13,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() =>
-        context.read<ProfileViewModel>().loadProfile());
+    Future.microtask(() => context.read<ProfileViewModel>().loadProfile());
   }
 
   @override
@@ -22,119 +21,98 @@ class _ProfilePageState extends State<ProfilePage> {
     final vm = context.watch<ProfileViewModel>();
 
     return SafeArea(
-      child: vm.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      child:
+          vm.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  const SizedBox(height: 30),
+
+                  // Avatar + Nama
+                  Center(
+                    child: Column(
+                      children: [
+                        const CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.green,
+                          child: Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          vm.user?.name ?? "Unknown User",
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                        Text(
+                          vm.user?.email ?? "No email",
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // List Menu
+                  Expanded(
+  child: Stack(
+    children: [
+      ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 1,
+            child: Column(
               children: [
-                const SizedBox(height: 30),
-
-                // Avatar + Nama
-                Center(
-                  child: Column(
-                    children: [
-                      const CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.green,
-                        child: Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        vm.user?.name ?? "Unknown User",
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                      Text(
-                        vm.user?.email ?? "No email",
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    ],
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(
+                    Icons.logout,
+                    color: Colors.red,
                   ),
-                ),
-
-                const SizedBox(height: 30),
-
-                // List Menu
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 1,
-                        child: Column(
-                          children: [
-                            ListTile(
-                              leading: const Icon(
-                                Icons.edit,
-                                color: Colors.green,
-                              ),
-                              title: const Text("Edit Profile"),
-                              trailing: const Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                              ),
-                              onTap: () {
-                                // TODO: Navigasi ke edit profile
-                              },
-                            ),
-                            const Divider(height: 1),
-                            ListTile(
-                              leading: const Icon(
-                                Icons.lock,
-                                color: Colors.green,
-                              ),
-                              title: const Text("Change Password"),
-                              trailing: const Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                              ),
-                              onTap: () {
-                                // TODO: Navigasi ke ubah password
-                              },
-                            ),
-                            const Divider(height: 1),
-                            ListTile(
-                              leading: const Icon(
-                                Icons.settings,
-                                color: Colors.green,
-                              ),
-                              title: const Text("Settings"),
-                              trailing: const Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                              ),
-                              onTap: () {},
-                            ),
-                            const Divider(height: 1),
-                            ListTile(
-                              leading: const Icon(
-                                Icons.logout,
-                                color: Colors.red,
-                              ),
-                              title: const Text("Logout"),
-                              trailing: const Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                              ),
-                              onTap: () => vm.logout(context),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  title: const Text("Logout"),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
                   ),
+                  onTap: () => vm.logout(context),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+      // Versi di bawah
+      Positioned(
+        bottom: 16,
+        left: 0,
+        right: 0,
+        child: Center(
+          child: Text(
+            "v1.0.1",
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    ],
+  ),
+),
+
+                ],
+              ),
     );
   }
 }
