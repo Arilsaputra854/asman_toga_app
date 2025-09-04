@@ -1,5 +1,8 @@
 import 'dart:io';
 
+import 'package:asman_toga/pages/plants_tab.dart';
+import 'package:asman_toga/service/api_service.dart';
+import 'package:asman_toga/viewmodel/create_userplant_admin_viewmodel.dart';
 import 'package:asman_toga/viewmodel/tambah_lokasi_tanaman_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -14,16 +17,15 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as p;
 
-class TambahLokasiTanamanPage extends StatefulWidget {
+class CreateUserPlantsAdmin extends StatefulWidget {
   final Map<String, dynamic>? existingPlant;
-  const TambahLokasiTanamanPage({
+  const CreateUserPlantsAdmin({
     super.key,
     this.existingPlant, // opsional
   });
 
   @override
-  State<TambahLokasiTanamanPage> createState() =>
-      _TambahLokasiTanamanPageState();
+  State<CreateUserPlantsAdmin> createState() => _CreateUserPlantsAdminState();
 }
 
 // Polygon baru berdasarkan titik yang diberikan
@@ -85,8 +87,8 @@ bool isPointInPolygon(LatLng point, List<LatLng> polygon) {
   return oddNodes;
 }
 
-class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
-  // Modern color palette - exact same as first code
+class _CreateUserPlantsAdminState extends State<CreateUserPlantsAdmin> {
+  // Modern color palette
   static const Color primaryGreen = Color(0xFF57A32E);
   static const Color lightGreen = Color(0xFF7BC142);
   static const Color backgroundColor = Color(0xFFF8FAF6);
@@ -97,6 +99,10 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
   static const Color textPrimary = Color(0xFF2D3748);
   static const Color textSecondary = Color(0xFF718096);
   static const Color accentBlue = Color(0xFF3182CE);
+
+  List<Map<String, dynamic>> users = [];
+  String? selectedUserId;
+  bool isLoadingUsers = false;
 
   List<XFile> selectedImages = [];
   List<int> selectedPlantIds = [];
@@ -109,9 +115,25 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
   LatLng selectedLocation = LatLng(-8.544444, 115.423333); // Titik awal
   final mapController = MapController();
 
+  Future<void> fetchUsers() async {
+    setState(() => isLoadingUsers = true);
+    try {
+      final result = await ApiService.getAllUsers();
+      setState(() {
+        users = List<Map<String, dynamic>>.from(result);
+        isLoadingUsers = false;
+      });
+    } catch (e) {
+      setState(() => isLoadingUsers = false);
+      _showErrorSnackBar('Gagal memuat data pengguna: $e');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+
+    fetchUsers();
 
     if (widget.existingPlant != null) {
       final plant = widget.existingPlant!;
@@ -125,13 +147,14 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
         plant["location"]["latitude"],
         plant["location"]["longitude"],
       );
+
+      selectedUserId = plant["location"]["user"]["id"];
     } else {
-      // default value (tambah baru)
       latController.text = selectedLocation.latitude.toStringAsFixed(6);
       lngController.text = selectedLocation.longitude.toStringAsFixed(6);
     }
 
-    context.read<TambahLokasiTanamanViewModel>().getAllPlants();
+    context.read<CreateUserplantAdminViewmodel>().getAllPlants();
   }
 
   void _showErrorSnackBar(String message) {
@@ -363,7 +386,7 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
 
   @override
   Widget build(BuildContext context) {
-    final vm = Provider.of<TambahLokasiTanamanViewModel>(context);
+    final vm = Provider.of<CreateUserplantAdminViewmodel>(context);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -399,17 +422,94 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Personal Information Section
-            _buildSectionTitle("Informasi Pribadi", Icons.person_rounded),
+            // User Selection Section
+            _buildSectionTitle("Informasi Pengguna", Icons.person_rounded),
             _buildModernCard(
               child: Column(
                 children: [
-                  _buildModernTextField(
-                    controller: namaController,
-                    label: "Nama Lengkap",
-                    icon: Icons.person_rounded,
-                    hint: "Masukkan nama lengkap Anda",
-                  ),
+                  isLoadingUsers
+                      ? Container(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                primaryGreen,
+                              ),
+                              strokeWidth: 2,
+                            ),
+                            const SizedBox(width: 16),
+                            Text(
+                              'Memuat data pengguna...',
+                              style: TextStyle(color: textSecondary),
+                            ),
+                          ],
+                        ),
+                      )
+                      : DropdownButtonFormField<String>(
+                        value: selectedUserId,
+                        isExpanded: true,
+                        style: TextStyle(color: textPrimary, fontSize: 16),
+                        decoration: InputDecoration(
+                          labelText: "Pilih Pengguna",
+                          prefixIcon: Container(
+                            margin: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: primaryGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.person_rounded,
+                              color: primaryGreen,
+                              size: 20,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: cardColor,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: Colors.grey.shade200,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: primaryGreen,
+                              width: 2,
+                            ),
+                          ),
+                          labelStyle: TextStyle(
+                            color: textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        items:
+                            users
+                                .map(
+                                  (u) => DropdownMenuItem<String>(
+                                    value: u["id"].toString(),
+                                    child: Text(u["name"] ?? "-"),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (v) => setState(() => selectedUserId = v),
+                      ),
+                ],
+              ),
+            ),
+
+            // Location Information Section
+            _buildSectionTitle("Informasi Lokasi", Icons.location_on_rounded),
+            _buildModernCard(
+              child: Column(
+                children: [
                   _buildModernTextField(
                     controller: alamatController,
                     label: "Alamat Lengkap",
@@ -746,25 +846,28 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
                           if (widget.existingPlant == null) {
                             // ➕ Tambah baru
                             bool allSuccess = true;
-                            for (var plantId in selectedPlantIds) {
-                              final success = await vm.submitPlant(
-                                plantId: plantId,
-                                address: alamatController.text,
-                                latitude: double.tryParse(latController.text),
-                                longitude: double.tryParse(lngController.text),
-                                notes:
-                                    catatanController.text.isNotEmpty
-                                        ? catatanController.text
-                                        : null,
-                                images: selectedImages,
-                              );
-                              if (!success) allSuccess = false;
-                            }
+                            // for (var plantIds in selectedPlantIds) {
+                            final success = await vm.submitPlantByAdmin(
+                              userId: selectedUserId!,
+                              plantIds: selectedPlantIds,
+                              address: alamatController.text,
+                              latitude: double.tryParse(latController.text),
+                              longitude: double.tryParse(lngController.text),
+                              notes:
+                                  catatanController.text.isNotEmpty
+                                      ? catatanController.text
+                                      : null,
+                              images: selectedImages,
+                            );
+                            if (!success) allSuccess = false;
+                            // }
                             if (allSuccess) {
-                              _showSuccessSnackBar(
-                                "Berhasil menambahkan tanaman",
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Berhasil menambahkan tanaman"),
+                                ),
                               );
-                              Navigator.pop(context);
+                              Navigator.pop(context, true);
                             }
                           } else {
                             // ✏️ Update existing
@@ -781,7 +884,11 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
                             );
 
                             if (success) {
-                              _showSuccessSnackBar("Tanaman berhasil diupdate");
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Tanaman berhasil diupdate"),
+                                ),
+                              );
                               Navigator.pop(context);
                             }
                           }
@@ -818,9 +925,9 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
                             ),
                           ],
                         )
-                        : Text(
-                          widget.existingPlant == null ? "Simpan" : "Update",
-                          style: const TextStyle(
+                        : const Text(
+                          "Simpan",
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -834,6 +941,7 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
     );
   }
 
+  // Optional: Fungsi compress image < 500KB
   Future<XFile?> compressImageUnder500KB(XFile file) async {
     try {
       final dir = await getTemporaryDirectory();
@@ -856,6 +964,7 @@ class _TambahLokasiTanamanPageState extends State<TambahLokasiTanamanPage> {
 
       return XFile(result?.path ?? file.path);
     } catch (e) {
+      _showErrorSnackBar("Gagal mengompres gambar: $e");
       return null;
     }
   }

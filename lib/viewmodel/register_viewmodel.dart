@@ -12,7 +12,8 @@ class RegisterViewModel extends ChangeNotifier {
   // Register function
   Future<bool> register({
     required String name,
-    required String email,
+    required String phone,
+    String email = "", // opsional
     required String password,
     required String confirmPassword,
     required int banjarId,
@@ -23,6 +24,7 @@ class RegisterViewModel extends ChangeNotifier {
 
     final result = await ApiService.register(
       name: name,
+      phone: phone,
       email: email,
       password: password,
       confirmPassword: confirmPassword,

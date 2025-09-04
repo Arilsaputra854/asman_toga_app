@@ -1,4 +1,3 @@
-// login_view_model.dart
 import 'package:asman_toga/helper/prefs.dart';
 import 'package:asman_toga/service/api_service.dart';
 import 'package:flutter/material.dart';
@@ -12,22 +11,31 @@ class LoginViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   Map<String, dynamic>? get userData => _userData;
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> login({
+    String? email,
+    String? phone,
+    required String password,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    final response = await ApiService.login(email: email, password: password);
+    final response = await ApiService.login(
+      email: email,
+      phone: phone,
+      password: password,
+    );
 
     _isLoading = false;
 
     if (response["success"]) {
       _userData = response["data"];
 
-      // ✅ Simpan token
-      if (response["data"]["token"] != null) {
-        await PrefsHelper.saveToken(response["data"]["token"]);
+      // ✅ Simpan token kalau ada
+      if (_userData?["token"] != null) {
+        await PrefsHelper.saveToken(_userData!["token"]);
       }
+
       notifyListeners();
       return true;
     } else {

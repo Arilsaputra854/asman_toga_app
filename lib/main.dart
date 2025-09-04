@@ -8,6 +8,7 @@ import 'package:asman_toga/pages/profile_page.dart';
 import 'package:asman_toga/pages/register_page.dart';
 import 'package:asman_toga/pages/reset_password_page.dart';
 import 'package:asman_toga/pages/splash_screen_page.dart';
+import 'package:asman_toga/viewmodel/create_userplant_admin_viewmodel.dart';
 import 'package:asman_toga/viewmodel/home_viewmodel.dart';
 import 'package:asman_toga/viewmodel/login_viewmodel.dart';
 import 'package:asman_toga/viewmodel/profile_viewmodel.dart';
@@ -41,7 +42,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
-        ChangeNotifierProvider(create: (_) =>  TambahLokasiTanamanViewModel()),
+        ChangeNotifierProvider(create: (_) => TambahLokasiTanamanViewModel()),
+        ChangeNotifierProvider(create: (_) => CreateUserplantAdminViewmodel()),
       ],
       child: MaterialApp(
         title: 'Asman Toga',
